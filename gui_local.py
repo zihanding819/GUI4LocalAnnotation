@@ -11,20 +11,22 @@ from PyQt5.QtGui import QImage, QPixmap, QPainter, QColor, QMouseEvent
 from PyQt5.QtCore import Qt, QRect, QEvent, QPoint
 
 import yaml
-from client_utils import request_sam, request_cotracker, request_video
+# from client_utils import request_sam, request_cotracker, request_video
 import numpy as np
 
 def load_anno_file(anno_file, out_file):
-    with open(anno_file, 'r') as f:
-        video_list = f.readlines()
+    # with open(anno_file, 'r') as f:
+    #     video_list = f.readlines()
     
-    if os.path.exists(out_file):
-        anno = pickle.load(open(out_file, 'rb'))
-    else:
-        anno = {}
+    # if os.path.exists(out_file):
+    #     anno = pickle.load(open(out_file, 'rb'))
+    # else:
+    #     anno = {}
+    anno = {}
+    video_list = []
     
-    video_list = [line.strip() for line in video_list]
-    video_list = sorted([line for line in video_list if line not in anno])
+    # video_list = [line.strip() for line in video_list]
+    # video_list = sorted([line for line in video_list if line not in anno])
         
     return video_list, anno
 
@@ -32,7 +34,7 @@ class VideoPlayer(QWidget):
     def __init__(self, args):
         
         # load video list
-        self.video_list, self.anno = load_anno_file(args.anno_file, args.out_file)
+        # self.video_list, self.anno = load_anno_file(args.anno_file, args.out_file)
         # self.video_list = [for v_name in os.listdir('/Users/dingzihan/Documents/projects/oxe_sample_data/bc_z/image')]
         
         super().__init__()
@@ -353,17 +355,19 @@ class VideoPlayer(QWidget):
         self.last_frame = None
         self.tracking_points = dict()
         self.tracking_masks = dict()
-        self.video_position_label.setText(f"Video: {self.cur_video_idx}/{len(self.video_list)}, Frame: -/-")
+        self.video_list = [0]
+        self.video_position_label.setText(f"Video: -/-, Frame: -/-")
+        # self.video_position_label.setText(f"Video: {self.cur_video_idx}/{len(self.video_list)}, Frame: -/-")
         
         self.timer = QTimer()
         self.timer.timeout.connect(self.play_video)
 
         # add config
-        config_path = "./config/config.yaml"
-        with open(config_path, "r") as f:
-            self.model_config = yaml.load(f, Loader=yaml.FullLoader)
-        self.sam_config = self.model_config["sam"]
-        self.co_tracker_config = self.model_config["cotracker"]
+        # config_path = "./config/config.yaml"
+        # with open(config_path, "r") as f:
+        #     self.model_config = yaml.load(f, Loader=yaml.FullLoader)
+        # self.sam_config = self.model_config["sam"]
+        # self.co_tracker_config = self.model_config["cotracker"]
 
         # initialize
         self.vis_track_res = False
@@ -614,12 +618,28 @@ class VideoPlayer(QWidget):
         if video is None:
             return
         self.video_pth = video_path
+
+        self.video_list = [self.video_pth]
+        self.anno = {}
+        video_name = self.video_pth.split('/')[-1].split('.')[0]
+        print(video_name)
+        video_name = self.video_list[self.cur_video_idx-1]
+        video_name = video_path
+        if video_name not in self.anno:
+            self.anno[video_name] = dict(
+                mask=[], track=[]
+            )
+        clip_data_pth = f'./{video_name}.json'
+        if os.path.exists(clip_data_pth):
+            self.load_clip_data()
+
+
         # cfg_num = video_path.split('/')[-3][-1]
         # eps_name = video_path.split('/')[-2]
         # cam_name = video_path.split('cam_')[-1].split('.mp4')[0]
         # video_request_pth = f's3://RH20T/RH20T_cfg{cfg_num}/{eps_name}/cam_{cam_name}/color/'
-        self.sam_config['video_path'] = self.video_list[self.cur_video_idx-1]
-        self.co_tracker_config['video_path'] = self.video_list[self.cur_video_idx-1]
+        # self.sam_config['video_path'] = self.video_list[self.cur_video_idx-1]
+        # self.co_tracker_config['video_path'] = self.video_list[self.cur_video_idx-1]
         self.frame_count = video.shape[0]
         self.ori_video = []
         for i in range(self.frame_count):
@@ -638,16 +658,15 @@ class VideoPlayer(QWidget):
         self.pre_f_button.setDisabled(True)
 
         # video_name = self.video_path.split('/')[-1].split('.')[0]
-        video_name = self.video_list[self.cur_video_idx-1]
-        # print(video_name)
-        video_name = video_path
-        if video_name not in self.anno:
-            self.anno[video_name] = dict(
-                mask=[], track=[]
-            )
-        clip_data_pth = f'./{video_name}.json'
-        if os.path.exists(clip_data_pth):
-            self.load_clip_data()
+        # video_name = self.video_list[self.cur_video_idx-1]
+        # video_name = video_path
+        # if video_name not in self.anno:
+        #     self.anno[video_name] = dict(
+        #         mask=[], track=[]
+        #     )
+        # clip_data_pth = f'./{video_name}.json'
+        # if os.path.exists(clip_data_pth):
+        #     self.load_clip_data()
             
     def update_frame(self, frame_number):
         # if self.cap is not None:

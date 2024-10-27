@@ -5,7 +5,7 @@ gui for 2d points annotation
 ```bash
 conda create -n tracker python=3.11
 conda activate tracker
-pip install PYQT5
+pip install -r requirements.txt
 ```
 
 ## Data preparation
